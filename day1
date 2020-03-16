@@ -1,0 +1,151 @@
+수업내용 요약
+첫날.
+container는 독립적으로 애플리케이션을 배포할 수 있는 것이다. 
+container에 모든 장비를 넣어두고 원하는 위치에 두고 사용하는 것이라고 생각하면 된다.
+docker는 어떤 OS에서도 사용가능하다.(Linux가 기본이다.)
+docker는 컨테이너를 올릴 수 있고 관리하는 플랫폼이라고 생각하면 된다.
+
+1. centos 에 docker 설치
+
+- 설치 방법에는 repository, package, script 를 사용할 수 있는데, repository로 설치를 했다.
+	yum install -y yum-utils  device-mapper-persistent-data  lvm2
+	yum-config-manager    --add-repo    https://download.docker.com/linux/centos/docker-ce.repo
+	yum install docker-ce docker-ce-cli containerd.io -y
+	systemctl start docker && systemctl enable docker
+	
+2. docker info 해서 확인해보면
+
+  Insecure Registries:
+  127.0.0.0/8
+  하나의 ip 이다.
+  
+  [root@docker ~]# cd /etc/docker/
+  [root@docker docker]# ls
+  key.json
+  -> Daemon configuration file 이 있어야 하는데 아직 없다.
+  
+  [root@docker docker]# cat > /etc/docker/daemon.json
+  {
+    "insecure-registries": ["10.100.0.0/24"]
+  }
+  [root@docker docker]# systemctl reset-failed docker
+  [root@docker docker]# systemctl restart docker
+  [root@docker docker]# docker info
+   Insecure Registries:
+    10.100.0.0/24
+    127.0.0.0/8
+  [root@docker docker]# ls
+  daemon.json  key.json
+
+3. 이미지와 컨테이너는 다르다.
+
+  [root@docker docker]# docker pull nginx
+  nginx 이미지를 다운받으라는 명령어
+
+  [root@docker docker]# docker image ls
+  REPOSITORY      	TAG             	IMAGE ID        	CREATED         	SIZE
+  nginx           	latest          	6678c7c2e56c    	11 days ago     	127MB
+
+  -> 아직 컨테이너는 만들어지지 않았다. 
+
+  [root@docker docker]# docker info
+  Client:
+   Debug Mode: false
+
+  Server:
+   Containers: 0
+    Running: 0
+    Paused: 0
+    Stopped: 0
+   Images: 1
+  -> 이미지만 생성
+
+  [root@docker docker]# docker container create nginx
+  a47c1cf4981884dc28acb2fcc09deff85a7b7117d0a3c0e5d03b57a1e294902a
+  [root@docker docker]# docker container ls
+  CONTAINER ID    	IMAGE           	COMMAND         	CREATED         	STATUS          	PORTS           	NAMES
+  [root@docker docker]# docker container ls -a  러닝이 안되었더라도 다 보여달라는 명령어.
+  CONTAINER ID    	IMAGE           	COMMAND              	CREATED          	STATUS          	PORTS           	NAMES
+  a47c1cf49818    	nginx           	"nginx -g 'daemon of…"   About a minute ago   Created                   cranky_engelbart
+
+  러닝시킨다.
+  [root@docker docker]# docker start cranky_engelbart
+  cranky_engelbart
+  [root@docker docker]# docker container ls -a
+  CONTAINER ID    	IMAGE           	COMMAND              	CREATED         	STATUS          	PORTS           	NAMES
+  a47c1cf49818    	nginx           	"nginx -g 'daemon of…"   3 minutes ago   	Up 32 seconds   	80/tcp          	cranky_engelbart
+
+
+  [root@docker docker]# docker stop cranky_engelbart
+  cranky_engelbart
+  [root@docker docker]# docker rm cranky_engelbart
+  cranky_engelbart
+  [root@docker docker]# docker container ls -a
+  CONTAINER ID    	IMAGE           	COMMAND         	CREATED         	STATUS          	PORTS           	NAMES
+  [root@docker docker]# docker image ls
+  REPOSITORY      	TAG             	IMAGE ID        	CREATED         	SIZE
+  nginx           	latest          	6678c7c2e56c    	11 days ago     	127MB
+  -> 이미지와 컨테이너가 다르다는 것을 보여준다.  
+
+4. root외에도 도커 사용 가능하게 도커그룹의 멤버로 추가할 수 있다.
+
+  [root@docker docker]# id guru
+  uid=1000(guru) gid=1000(guru) groups=1000(guru)
+  [root@docker docker]# su - guru
+
+  [guru@docker ~]$ docker version
+  Client: Docker Engine - Community
+   Version:       	19.03.8
+   API version:   	1.40
+   Go version:    	go1.12.17
+   Git commit:    	afacb8b
+   Built:         	Wed Mar 11 01:27:04 2020
+   OS/Arch:       	linux/amd64
+   Experimental:  	false
+  Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get http://%2Fvar%2Frun%2Fdocker.sock/v1.40/version: dial unix /var/run/docker.sock: connect: permission denied
+  [guru@docker ~]$ exit
+  logout
+  [root@docker docker]# ls -l /var/run/docker.sock
+  srw-rw----. 1 root docker 0 Mar 16 01:59 /var/run/docker.sock
+  [root@docker docker]# usermod -G docker guru
+  [root@docker docker]# id guru
+  uid=1000(guru) gid=1000(guru) groups=1000(guru),981(docker)
+
+
+5. 각 컨테이너는 다 다른 ip addr 가진다.
+
+
+6. 커널은 하나라서 최신 버전으로 업데이트 하는 것이 좋다.
+
+# yum -y update
+	kernel 3.10.0-1062.12.1.el7.x86_64    - centos 7.x update version
+	kernel 3.10.0-957
+
+# yum -y install yum-plugin-fastestmirror
+# cat /etc/redhat-release
+# cat /etc/os-release
+
+repositry url 등록
+# rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
+# rpm -Uvh http://www.elrepo.org/elrepo-release-7.0-2.el7.elrepo.noarch.rpm
+# yum repolist
+
+# yum --enablerepo=elrepo-kernel install kernel-ml -y
+
+	0 새커널이 설치 5.X
+	1 kernel 3.10.0-1062.12.1.el7.x86_64 - centos 7.x update version
+	2 kernel 3.10.0-957
+
+# grub2-set-default 0
+# reboot
+# uname -r
+
+# cat << EOF > /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
+# sysctl --system
+
+7. run 은 pull, create, start 를 포함한다.
+  [root@docker ~]# docker run -it --name c1 ubuntu:18.04
