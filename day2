@@ -1,0 +1,136 @@
+둘째 
+
+구조
+/var/lib/docker |-- container - UUID
+                |-- overlay2 (layer 저장)
+                |-- image (layer 이름 관리)
+                
+1. layer
+- image 는 read only layer 만 있다. 
+- container create 하면 read write layer 가 하나 생긴다. (layer는 계속 추가 가능)
+- container : image (read only) + read write layer
+-> overlay2와 UFS 방식으로 기존에 있던 layer는 그대로 두고 새로운 layer를 추가되고, 최신의 것만 보여진다.
+
+
+2. hub.docker.com
+- hub에 퍼블릭 컨테이너가 많이 있다. docker는 경량 배포에 아주 적합하다.
+- docker file : 컨테이너 빌드 문법 / docker file에 있는 CMD는 명령문에 따로 적지 않아도 자동으로 실행된다.
+
+
+3. docker commands 
+	docker [OPTIONS] COMMAND
+
+  run : pull -> create(rw layer) UUID -> start -> attach
+	docker run [OPTIONS]      IMAGE:TAG [COMMAND] [ARG...]
+  
+  docker run  -it ubuntu:18.04 /bin/bash
+
+	$ docker run  ubuntu /bin/echo 'hello, world!'
+	hello, world!
+	
+	$ docker run --name web -d nginx 
+  
+  • 컨테이너 이미지 관리
+	- 이미지 다운로드 : docker image pull  	&& docker pull 
+	- 이미지 삭제 : docker image rm		&& docker rmi
+	- 이미지 목록보기 : docker image ls		&& docker images
+	- 이미지 검색 :  docker image search		&& docker search
+	- 이미지 구조 확인 : docker image inspect	&& docker inspect image_name
+
+-> 이미지 삭제하려면 컨테이너 삭제해야
+   컨테이너 삭제 : rw layer 삭제
+
+  컨테이너 실행과 종료
+  • 컨테이너 생성 : docker container create	
+  • 컨테이너 생성 및 구동 : docker container run
+  • 컨테이너 구동 : docker container start
+  • 컨테이너 중지 : docker container stop
+  • 컨테이너 삭제 : docker container rm
+  • 컨테이너 목록 확인 : docker container ps
+  • 컨테이너 구조 확인 :  docker inspect conatiner_name
+    docker ps -a
+    docker ps -l
+
+  alias crm='docker rm -f $(docker ps -aq)'
+
+  vim ~/.bashrc
+  alias crm='docker rm -f $(docker ps -aq)'
+
+
+  • background mode: detached(-d)
+  • foreground mode: attach(-it)
+  • 컨테이너의 접속: docker container attach
+  • 컨테이너 프로세스 실행 : docker container exec
+  • 컨테이너 프로세스 정보보기 : docker container top
+
+
+  • 컨테이너의 표준 출력 결과 보기: docker container logs
+  • 컨테이너 이름 변경 : docker container rename
+  • 컨테이너 내에서 파일 복사 : docker container cp
+  • 컨테이너 내에서 파일 변경이력 확인 : docker container diff
+
+
+4. commit : 컨테이너에서 이미지 생성
+
+docker commit [OPTIONS] CONTAINER [REPOSITORY[:TAG]]
+	================
+	/# yum install -y httpd iproute
+	/# cd /var/www/html/
+	/# echo "HPE" > index.html
+	===========
+	centos:7(ro)
+	------------
+
+$ docker run -it --name c1 centos:7
+/# yum install -y httpd iproute
+/# cd /var/www/html/
+/# echo "HPE" > index.html
+/# exit
+
+$ docker commit c1 newimage:tag
+
+$ docker images
+$ docker run --name web -d newimage:tag /usr/sbin/httpd -DFOREGROUND
+
+
+5. 재밌었던 워크북 - 컨테이너에서 응용프로그램 
+
+[root@docker ~]# docker run  -it --name cowsay --hostname cowsay debian bash
+root@cowsay:/# apt-get update
+root@cowsay:/# apt-get install -y cowsay fortune
+
+
+root@cowsay:/# /usr/games/fortune | /usr/games/cowsay
+
+ _______________________________________
+/ Have a place for everything and keep  \
+| the thing somewhere else; this is not |
+| advice, it is merely custom.      	|
+|                                   	|
+\ -- Mark Twain                     	/
+ ---------------------------------------
+    	\   ^__^
+     	\  (oo)\_______
+        	(__)\   	)\/\
+            	||----w |
+            	|| 	||
+              
+root@cowsay:/# /usr/games/fortune | /usr/games/cowsay
+
+ ______________________________________
+/ You'd like to do it instantaneously, \
+\ but that's too slow.             	/
+ --------------------------------------
+    	\   ^__^
+     	\  (oo)\_______
+        	(__)\   	)\/\
+            	||----w |
+            	|| 	||
+              
+root@cowsay:/# docker commit -a "~~hub에 만들어둔 계정~~" cowsay debian-cowsay
+bash: docker: command not found
+root@cowsay:/# exit
+exit
+[root@docker ~]# docker commit -a "~~hub에 만들어둔 계정~~" cowsay debian-cowsay
+sha256:d63ece80c513d2b33df435a4e58228bdbf349f17341fe017d87a8032e01429f7
+
