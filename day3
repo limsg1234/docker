@@ -1,0 +1,71 @@
+셋째 날
+
+1. registry
+
+- public registry : https://hub.docker.com/
+   repository   index
+	ubuntu:16.04
+	ubuntu:18.04
+	ubuntu:19.10
+	...
+
+	busybox
+
+   registry/repositry:index
+   smlinux/myimage:tag
+
+- private registry : 사내. docker.example.com/repositry:tag
+
+# mkdir /images
+$ docker run -d --name registry --restart always \
+   -v /images:/var/lib/registry -p 5000:5000  registry:2.7
+
+
+2. docker file
+ 
+둘째 날의 커밋 - 나만의 컨테이너 만들기
+이번엔 도커파일로 빌드하자
+
+  [root@docker ~]# mkdir build
+  [root@docker ~]# cd build/
+  [root@docker build]# cat > dockerfile
+  FROM centos:7
+  RUN yum install -y iproute httpd -y
+  RUN echo "HPE" > /var/www/html/index.html
+  EXPOSE 80
+  CMD ["/usr/sbin/httpd", "-DFOREGROUND"]^C
+  [root@docker build]# cat > dockerfile
+  FROM centos:7
+  RUN yum install -y iproute httpd -y
+  RUN echo "HPE" > /var/www/html/index.html
+  EXPOSE 80
+  CMD ["/usr/sbin/httpd", "-DFOREGROUND"]
+  [root@docker build]# ls
+  dockerfile
+  [root@docker build]# docker build -t centweb:v1  .   (. 은 현제 디렉토리라는 뜻이다.)
+  
+  
+-> 기본 구성
+
+- FROM : 베이스 이미지이다. 맨 처음에 있어야 한다.
+- RUN : command run
+- ADD : 압축 풀고 복사 / COPY : 그대로 복사
+- CMD : run 명령 실행 시 적용할 command를 나열, 하나만 적용 가능하고 여러 개 입력 시 마지막 것으로 적용.
+- ENTRYPOINT : CMD 와 같이 쓸 때, ENTRYPOINT 는 명령어 command 이고 CMD는 옵션과 argument 이다.
+  ENTRYPOINT ["command"]
+  CMD ["-option", "argument"]
+- LABEL : 정보 전달
+
+
+-> 환경구성, 네트워크 설정
+
+- ENV : 환경변수
+- ARG : 도커 파일은 그대로 두고 빌드 시점에 수정한 것을 적용하고 싶을 때
+- EXPOSE : 포트 여는 것이 아니고, 쓰고 있는 포트를 보여주는 것
+- USER : 항상 root로 하면 보안에 문제가 있기 때문에 권한을 최소화한 유저를 만들어서 사용. 배치가 중요하다.
+- VOLUME : 볼륨 마운트(데이터를 보존하는 명령어 : -v) 하지 않아도 데이터를 유지 보존한다. (컨테이너를 삭제해도)
+- WORKDIR : 현재 디렉토리 ( .)
+- ONBUILD : 빌드한 컨테이너를 base image로 사용할때 적용되는 명령어
+- STOPSIGNAL
+- HEALTHCHECK : 자가 테스트
+- SHELL : 셸 기능으로 command 하고 싶을 때
