@@ -1,0 +1,107 @@
+넷째 날
+
+1. RESOURCE LIMITS
+
+docker run -itd -m 512m  --name c1 ubuntu:18.04
+docker run -it -m 512m --memory-reservation 10m --name c1 ubuntu:18.04
+# docker run -it -m 1000m --memory-swap 
+# docker run -it -m 512m --memory-swappiness=60  --oom-kill-disable ubuntu /bin/bash
+
+swap
+
+# docker run -m 129m --memory-swap 129m smlinux/stress:latest stress --vm 1 --vm-bytes 127m -t 5s
+# docker run -it --cpuset-cpus 0 smlinux/stress:latest stress --cpu 1
+
+docker run -m 129m --memory-swap 129m -d smlinux/stress:latest stress --vm 1 --vm-bytes 127m
+
+docker run -v /:/usr/share/nginx/html   nginx
+
+
+2. Monitoring Tools
+yum install -y epel-release && yum install -y htop
+
+docker top
+docker exec
+docker logs
+
+docker events
+docker stats
+
+-LAB
+# docker run -m 129m --memory-swap 129m smlinux/stress:latest stress --vm 1 --vm-bytes 127m -t 5s
+# docker run -m 129m --memory-swap 129m smlinux/stress:latest stress --vm 1 --vm-bytes 130m -t 5s
+# docker run -m 129m stress:latest stress --vm 1 --vm-bytes 130m -t 5s
+
+# docker run -d -m 100M --name web2 -oom-kill-disable=true nginx
+# cat /sys/fs/cgroup/memory/docker/컨테이너ID/memory.oom_control
+oom_kill_disable 1
+
+oom score 값(-1000~1000)을 통해 OOM Kill될 컨테이너 순서를 정한다.
+# docker run -d -m 100M --name web3 --oom-score-adj=-500 nginx
+# cat /proc/$(docker inspect -f '{{.State.Pid}}' web3)/oom_score_adj
+
+# docker run --cpuset-cpus 1 --name c1 -d smlinux/stress stress --cpu 1
+# docker run --cpuset-cpus 0-1 --name c1 -d smlinux/stress stress --cpu 1
+# htop
+# docker rm c1
+
+# docker rm -f $(docker ps -aq)
+
+
+# docker run -c 2048 --name load1 -d stress
+# docker run --name load2 -d stress
+# docker run -c 512 --name load3 -d stress
+# docker run -c 512 --name load4 -d stress
+# docker stats load1 load2 load3 load4
+
+
+
+docker run --cap-add NET_ADMIN -it -h node1 --dns 8.8.8.8 --dns-search=example.com ubuntu_net
+/ # cat /etc/hosts
+/ # cat /etc/resolv.conf
+/ # ip link add type veth
+/ # ip link show
+2: veth0@veth1
+3: veth1@veth0
+/ # exit
+
+
+CHOWN 금지
+# docker run --name c1 --cap-add=ALL --cap-drop=CHOWN -it ubuntu useradd test
+# docker run --name c2 --cap-drop=ALL --cap-add=CHOWN -it ubuntu useradd test
+
+
+3. CONTAINER STORAGE
+
+1) 호스트의 볼륨 공유 : -v 
+	-v <호스트 경로>:<컨테이너 마운드 경로>
+	-v <호스트 경로>:<컨테이너 마운드 경로>:<읽기 쓰기 모드>
+$ docker run -d -v /webdata:/usr/share/nginx/html  -v /logdata:/var/log/nginx nginx
+$ docker run -d -v /webdata:/usr/share/nginx/html:ro  -v /logdata:/var/log/nginx --name web2 nginx
+
+	        -v <컨테이너 마운드 경로>
+		/var/lib/docker/volumes/UUID/_data:/var/log/nginx
+$ docker run -d -v /var/log/nginx  --name web3 nginx
+
+
+2) named volume : docker volume 
+
+	/var/lib/docker/volumes/webdata/_data
+$ docker volume create webdata
+$ docker run -d -v webdata:/usr/share/nginx/html  nginx
+
+
+3) dataonly container
+
+	dataonly		back_end		<----- front_end
+	busybox			mysql					wordpress
+	   |			    |	
+	   +-- /var/lib/mysql   <---+ volumes-from dataonly
+
+
+
+docker run -v dbdata:/var/lib/mysql -it --name dataonly busybox
+
+
+docker run -d  --volumes-from dataonly --name db -e MYSQL_ROOT_PASSWORD=pass  mysql
+
