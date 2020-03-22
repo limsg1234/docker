@@ -1,0 +1,54 @@
+다섯째 날.
+
+1. Docker Networking
+
+  1) docker는 컨테이너 네트워크 모델 (CNM) 개념을 사용
+  - sandbox : 컨테이너의 격리 환경의 네트워크 구성
+  - endpoint : 네트워트 인터페이스
+  - network : 네트워크 인터페이스 그룹
+
+  2) network driver
+  - bridge : 리눅스의 가상 브릿지
+  - host : 컨테이너가 호스트 네트워크를 사용
+  - null : 네트워크 구성을 갖지 않음
+  
+  3) bridhed network
+  - 모든 docker 호스트에 존재
+  - docker()
+  
+  4) user defined networking
+  - 네트워크를 사용자가 직접 정의하여 생성
+    : docker network create
+    
+  5) docker network 사용
+  - 옵션 --net을 통해 네트워크 선택
+  # docker run -it --net=bridge ubuntu
+  - 네트워크 공유
+  # docker run -it --name=myUbuntu --net=bridge ubuntu
+  # docker run -it --net=container:myUbuntu busybox
+  - 네트워크 연결 : docker network connect
+  - 네트워크 연결해제 : docker network disconnect
+  
+  6) 멀티 호스트 네트워크 생성
+  - 멀트 docker 호스트 간 네트워크 연결 : overlay network
+  
+  7) network driver plugin
+  - 대부분 멀티호스트 환경의 PasS를 위한 VxLAN
+  - 멀티호스트 플러그인
+
+2. docker compose 
+
+  1) docker-compose 명령 주요 옵션
+  - -f : docker-compose.yml 파일 경로와 파일 이름
+  - -p : 프로젝트 이름으로 기본 값은 명령을 수행하는 폴더 이름
+  - --verbose : 이미지에 대한 구성 내용 출력
+  - -v : docker compose 클라이언트 버전 출력
+  
+  $ docker-compose -f docker-compose.yml -f docker-compose.admin.yml run backup_db
+  
+  2) docker compose 위한 YAML
+  - compose 파일은 YAML 파일로 서비스, 네트워크, 볼륨 등 애플리케이션에 대한 모든 것을 정의
+  - compose 파일의 기본경로와 이름 : 현재 디렉토리의 docker-compose.yml
+  - 파일 확장자로 .yml 또는 .yaml 모두 사용 가능
+  - dockerfile에서 정의한 옵션은 docker-compose.yml 파일에서 다시 정의할 필요 없음
+  
